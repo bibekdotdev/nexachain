@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [tree, setTree] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const loadAll = async () => {
     setLoading(true);
@@ -49,53 +50,129 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const copyReferralCode = async () => {
+    if (!user?.referralCode) return;
+    try {
+      await navigator.clipboard.writeText(user.referralCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unsupported, fail silently */
+    }
+  };
+
+  const initials = (user?.fullName || "U")
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
-    <div>
+    <div className="dashboard-page">
       <div className="topbar">
-        <div>
-          <strong>Nexachain</strong> — Welcome, {user?.fullName}
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
-            Referral code: <strong>{user?.referralCode}</strong>
+        <div className="topbar-left">
+          <div className="avatar-circle">{initials}</div>
+          <div>
+            <div className="brand-row">
+              <strong className="brand-name">Nexachain</strong>
+              <span className="welcome-text">
+                Welcome back, {user?.fullName}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="referral-chip"
+              onClick={copyReferralCode}
+              title="Click to copy"
+            >
+              Referral code: <strong>{user?.referralCode}</strong>
+              <span className="copy-indicator">
+                {copied ? "Copied!" : "Copy"}
+              </span>
+            </button>
           </div>
         </div>
-        <button className="btn" onClick={logout}>
+        <button className="btn btn-outline" onClick={logout}>
           Log out
         </button>
       </div>
 
       <div className="container">
-        {error && <div className="error-text">{error}</div>}
+        {error && (
+          <div className="error-banner">
+            <span className="error-icon">!</span>
+            <span>{error}</span>
+            <button className="error-dismiss" onClick={() => setError("")}>
+              ×
+            </button>
+          </div>
+        )}
 
-        {loading && <p className="spinner-text">Loading dashboard...</p>}
+        {loading && (
+          <div className="skeleton-grid">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton-card" />
+            ))}
+          </div>
+        )}
 
         {!loading && summary && (
           <>
             <NewInvestmentForm onCreated={loadAll} />
+            <br />
 
             <DashboardCards summary={summary} />
 
-            <EarningsChart
-              roiHistory={roiHistory}
-              referralHistory={referralHistory}
-            />
+            <section className="section-block">
+              <EarningsChart
+                roiHistory={roiHistory}
+                referralHistory={referralHistory}
+              />
+            </section>
 
-            <h3 className="section-title">Investment History</h3>
-            <div className="card">
-              <InvestmentTable investments={investments} />
-            </div>
+            <section className="section-block">
+              <div className="section-header">
+                <h3 className="section-title">Investment History</h3>
+                <span className="section-count">
+                  {investments.length} records
+                </span>
+              </div>
+              <div className="card table-card">
+                <InvestmentTable investments={investments} />
+              </div>
+            </section>
 
-            <h3 className="section-title">ROI History</h3>
-            <div className="card">
-              <RoiTable history={roiHistory} />
-            </div>
+            <section className="section-block">
+              <div className="section-header">
+                <h3 className="section-title">ROI History</h3>
+                <span className="section-count">
+                  {roiHistory.length} records
+                </span>
+              </div>
+              <div className="card table-card">
+                <RoiTable history={roiHistory} />
+              </div>
+            </section>
 
-            <h3 className="section-title">Referral Income History</h3>
-            <div className="card">
-              <ReferralTable history={referralHistory} />
-            </div>
+            <section className="section-block">
+              <div className="section-header">
+                <h3 className="section-title">Referral Income History</h3>
+                <span className="section-count">
+                  {referralHistory.length} records
+                </span>
+              </div>
+              <div className="card table-card">
+                <ReferralTable history={referralHistory} />
+              </div>
+            </section>
 
-            <h3 className="section-title">Referral Tree</h3>
-            <ReferralTree tree={tree} />
+            <section className="section-block">
+              <div className="section-header">
+                <h3 className="section-title">Referral Tree</h3>
+              </div>
+              <ReferralTree tree={tree} />
+            </section>
           </>
         )}
       </div>
